@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>R&D Problem Submission Portal</title>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// Firebase Configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyBEwqlqlN446o8nY3dDHSZ4ABmZiVQIID8",
+  authDomain: "rdportal-e5497.firebaseapp.com",
+  databaseURL: "https://rdportal-e5497-default-rtdb.firebaseio.com/",
+  projectId: "rdportal-e5497",
+  storageBucket: "rdportal-e5497.firebasestorage.app",
+  messagingSenderId: "95071114633",
+  appId: "1:95071114633:web:a853403cc2520d65c7fd58"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+window.addEventListener("DOMContentLoaded", () => {
+  const authSection = document.getElementById("authSection");
+  const formSection = document.getElementById("formSection");
+  const authForm = document.getElementById("authForm");
+  const problemForm = document.getElementById("problemForm");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  // Student Login
+  authForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("authEmail").value;
+    const password = document.getElementById("authPassword").value;
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Check if user exists in allowed_users
+      const ref = doc(db, "allowed_users", user.email);
+      const docSnap = await getDoc(ref);
+
+      if (docSnap.exists()) {
+        authSection.classList.add("hidden");
+        formSection.classList.remove("hidden");
+      } else {
+        alert("You are not authorized to access this portal.");
+        await signOut(auth);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Invalid login or access denied!");
+    }
+  });
+
+  // Submit Problem
+  problemForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const data = {
+      studentName: document.getElementById("studentName").value,
+      department: document.getElementById("department").value,
+      email: document.getElementById("email").value,
+      title: document.getElementById("title").value,
+      description: document.getElementById("description").value,
+      status: "Pending",
+      timestamp: serverTimestamp()
+    };
+    try {
+      await addDoc(collection(db, "problems"), data);
+      alert("✅ Problem submitted successfully!");
+      problemForm.reset();
+    } catch (err) {
+      console.error(err);
+      alert("Error submitting your problem!");
+    }
+  });
+
+  // Logout
+  logoutBtn.addEventListener("click", async () => {
+    await signOut(auth);
+    formSection.classList.add("hidden");
+    authSection.classList.remove("hidden");
+  });
+});
+</script>
+</head>
+
+<body class="bg-gradient-to-br from-blue-100 via-blue-50 to-white min-h-screen flex flex-col">
+
+<!-- Login Section -->
+<section id="authSection" class="flex flex-col justify-center items-center flex-grow px-4">
+  <form id="authForm" class="bg-white shadow-2xl rounded-2xl p-6 sm:p-8 md:p-12 w-full max-w-md grid gap-4">
+    <h2 class="text-3xl font-bold text-blue-700 text-center mb-2">R&D Student Login</h2>
+    <p class="text-gray-500 text-center text-sm mb-4">Only registered students can access</p>
+
+    <input id="authEmail" type="email" placeholder="Email" class="p-3 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" required>
+    <input id="authPassword" type="password" placeholder="Password" class="p-3 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" required>
+
+    <button type="submit" class="bg-gradient-to-r from-blue-600 to-cyan-500 text-white py-3 rounded-xl font-semibold text-lg hover:scale-105 transition-transform duration-300 shadow-lg hover:shadow-xl">
+      Login
+    </button>
+  </form>
+</section>
+
+<!-- Problem Submission Form -->
+<section id="formSection" class="hidden flex-grow flex flex-col items-center justify-center px-4 py-6">
+  <div class="w-full max-w-3xl bg-white rounded-2xl shadow-2xl p-6 sm:p-8 md:p-12 relative">
+    <div class="absolute top-4 right-4 flex flex-wrap gap-2">
+      <button onclick="window.location.href='studash.html'" 
+        class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg text-sm">📊 Go to Dashboard</button>
+      <button id="logoutBtn" 
+        class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg text-sm">Logout</button>
+    </div>
+
+    <h2 class="text-2xl font-semibold text-gray-800 text-center mb-6">Submit Your R&D Problem</h2>
+
+    <form id="problemForm" class="grid grid-cols-1 gap-4">
+      <div class="flex flex-col md:flex-row gap-2 md:gap-4">
+        <input type="text" id="studentName" placeholder="Your Name" class="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" required>
+        <input type="text" id="department" placeholder="Department" class="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" required>
+      </div>
+
+      <input type="email" id="email" placeholder="Email" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" required>
+      <input type="text" id="title" placeholder="Problem Title" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" required>
+      <textarea id="description" placeholder="Problem Description" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none" rows="5" required></textarea>
+
+      <button type="submit" class="bg-gradient-to-r from-blue-600 to-cyan-500 text-white py-3 rounded-xl font-semibold text-lg hover:scale-105 transition-transform duration-300 shadow-lg hover:shadow-xl">
+        Submit Problem
+      </button>
+    </form>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-blue-700 text-white py-6 mt-auto text-center">
+  <p class="text-gray-200">© 2025 R&D Cell Hub. All Rights Reserved.</p>
+</footer>
+
+</body>
+</html>
